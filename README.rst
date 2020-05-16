@@ -11,7 +11,9 @@ This project aims at providing a rudimentary interactive shell that allows a Tou
 Functionality
 =============
 
+===========================================================
 .. NOTE:: Functionality in *italics* is not implemented yet
+===========================================================
 
 Executed from the command prompt, the to-shell allows to:
 
