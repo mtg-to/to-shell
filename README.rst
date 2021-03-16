@@ -21,9 +21,9 @@ Executed from the command prompt, the to-shell allows to:
 * create a new event
 * enroll players in the event
 * pair a round
- * fully automatically
- * *with fixed pairings*
- * *with fixed byes*
+   * fully automatically
+   * *with fixed pairings*
+   * *with fixed byes*
 * enter the results for a match
 * correct the current round's results
 * complete a round
