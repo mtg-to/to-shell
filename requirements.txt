@@ -1,1 +1,2 @@
-git+git://github.com/piotrberlowski/pypair@0.2
+
+git+git://github.com/JeffHoogland/pypair#egg=pypair
