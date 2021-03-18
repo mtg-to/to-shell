@@ -74,6 +74,17 @@ class EventManageShell(Cmd, ExitMixin):
         else:
             print("No players enrolled!")
 
+    def do_bye(self, plid):
+        if str(plid) in self._players.keys():
+            self._event.assignBye(str(plid))
+        else:
+            print("No player with that id!")
+
+    def do_match(self, plids):
+        plids = plids.split()
+        self._event.pairPlayers(str(plids[0]), str(plids[1]))
+
+
 class RoundShell(Cmd):
 
     _exit_msg = "Round finished!"
