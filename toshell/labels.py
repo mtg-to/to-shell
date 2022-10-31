@@ -55,8 +55,16 @@ Creates an event named {evid}.
 '''
 
 EVENT_MANAGE_HELP='''
-Usage: managee {evid}
+Usage: manage {evid}
   * evid - event identifier
 
 Opens a management console for an event named {evid}.
+'''
+
+PLAYER_ADD_HELP='''
+Usage: add {plid:name}
+  * plid - player identifier
+  * name - player name
+
+Adds player to the player database.
 '''

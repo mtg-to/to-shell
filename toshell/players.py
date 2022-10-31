@@ -5,6 +5,7 @@ Created on 15 Mar 2021
 '''
 from cmd import Cmd
 from toshell.utils import ExitMixin
+from toshell.labels import PLAYER_ADD_HELP
 import csv
 
 class PlayersShell(Cmd, ExitMixin):
@@ -47,6 +48,9 @@ class PlayersShell(Cmd, ExitMixin):
     def do_add(self, player_def):
         (plid, name) = player_def.split(":")
         if not plid or not name:
-            self.do_help_add()
+            self.help_add()
             return
         self._state.players[plid] = name
+
+    def help_add(self):
+        print(PLAYER_ADD_HELP)
