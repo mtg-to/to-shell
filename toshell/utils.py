@@ -11,4 +11,5 @@ class ExitMixin():
         print()
         return self.do_exit(params)
 
-
+def dict_rev_lookup(dict, value):
+    return list(dict.keys())[list(dict.values()).index(value)]

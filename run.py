@@ -1,0 +1,56 @@
+from toshell import TOShell
+from toshell.game.fow import FoWResultFactory
+
+def prime():
+    shell = TOShell()
+    shell.do_players("NR.csv")
+    evt = shell.api_manage("t", result_factory_factory=FoWResultFactory)
+    evt.do_enroll_all(None)
+    return evt.api_pair()
+
+def simulate():
+    rnd = prime()
+    rnd.do_report("1 9-1")
+    rnd.do_report("2 8-2")
+    rnd.do_report("3 7-3")
+    rnd.do_report("4 2-8")
+    rnd.do_report("5 1-9")
+    rnd.do_report("6 3-3")
+    rnd.do_report("7 3-2")
+    rnd.do_report("8 1-3")
+    rnd.do_report("9 1-9")
+    rnd.do_pairings(None)
+    rnd.do_submit(None)
+    evt.do_standings(None)
+    rnd = evt.api_pair()
+    rnd.do_report("1 9-1")
+    rnd.do_report("2 8-2")
+    rnd.do_report("3 7-3")
+    rnd.do_report("4 2-8")
+    rnd.do_report("5 1-9")
+    rnd.do_report("6 3-3")
+    rnd.do_report("7 3-2")
+    rnd.do_report("8 1-3")
+    rnd.do_report("9 1-9")
+    rnd.do_pairings(None)
+    rnd.do_submit(None)
+    evt.do_standings(None)
+    rnd = evt.api_pair()
+    rnd.do_report("1 9-1")
+    rnd.do_report("2 8-2")
+    rnd.do_report("3 7-3")
+    rnd.do_report("4 2-8")
+    rnd.do_report("5 1-9")
+    rnd.do_report("6 3-3")
+    rnd.do_report("7 3-2")
+    rnd.do_report("8 1-3")
+    rnd.do_report("9 1-9")
+    rnd.do_pairings(None)
+    rnd.do_submit(None)
+    evt.do_standings(None)
+
+def main():
+    prime().cmdloop()
+
+if __name__ == '__main__':
+    main()

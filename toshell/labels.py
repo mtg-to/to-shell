@@ -61,10 +61,24 @@ Usage: manage {evid}
 Opens a management console for an event named {evid}.
 '''
 
+PLAYERS_MANAGE_HELP='''
+Usage: players ({path})
+  * path (optional) - path to the player database to open
+
+Opens a player database management console (optionally loading the specified CSV).
+'''
+
 PLAYER_ADD_HELP='''
 Usage: add {plid:name}
   * plid - player identifier
   * name - player name
 
 Adds player to the player database.
+'''
+
+PLAYER_LIST_SAVE_HELP='''
+Usage: save {path}
+  * path - path to where the player list is to be saved
+
+Saves the player database to a CSV file.
 '''

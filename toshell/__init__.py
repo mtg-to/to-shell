@@ -7,6 +7,8 @@ from toshell.utils import ExitMixin
 from toshell.players import PlayersShell
 from toshell.labels import SHELL_INTRO_TEXT, SHELL_OUTRO_TEXT
 from toshell.event import EventManageShell
+from toshell.game.mtg import MtgResultFactory
+from toshell.game.fow import FoWResultFactory
 
 
 class TOShell(Cmd, ExitMixin):
@@ -27,9 +29,21 @@ class TOShell(Cmd, ExitMixin):
         if not evid:
             self.help_manage()
         else:
-            EventManageShell(self._state, evid, self.completekey, self.stdin, self.stdout).cmdloop()
+            self.api_manage(evid).cmdloop()
+
+    def api_manage(self, evid, result_factory_factory=MtgResultFactory):
+        return EventManageShell(self._state, evid, result_factory_factory(), self.completekey, self.stdin, self.stdout)
 
     def help_manage(self):
+        print(toshell.labels.EVENT_MANAGE_HELP)
+
+    def do_fow(self, evid):
+        if not evid:
+            self.help_manage()
+        else:
+            self.api_manage(evid, result_factory_factory=FoWResultFactory).cmdloop()
+
+    def help_fow(self):
         print(toshell.labels.EVENT_MANAGE_HELP)
 
     def do_players(self, params):
@@ -38,6 +52,9 @@ class TOShell(Cmd, ExitMixin):
             pshell.do_load(params)
         else:
             pshell.cmdloop()
+
+    def help_players(self):
+        print(toshell.labels.PLAYERS_MANAGE_HELP)
 
 def main():
     TOShell().cmdloop()
