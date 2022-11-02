@@ -10,13 +10,15 @@ import toshell.labels
 import pypair
 
 from toshell.utils import ExitMixin
-from pypair import Tournament
+from toshell.utils import dict_rev_lookup
+from toshell.game.mtg import MtgResultFactory
+from functools import cmp_to_key
 
 POINTS_KEY = "Points"
 OMW_KEY = "OMW%"
 NAME_KEY = "Name"
 
-pypair.debuglevel = 2
+pypair.debuglevel = 1
 
 class EventManageShell(Cmd, ExitMixin):
 
@@ -25,13 +27,14 @@ class EventManageShell(Cmd, ExitMixin):
 
     def _init_event(self, state, evid):
         if not evid in state.events:
-            state.events[evid] = Tournament()
+            state.events[evid] = pypair.Tournament(calculator=self._result_factory.points_calculator())
             self.intro = toshell.labels.EVENT_INTRO_NEW_TEXT
         else:
             self.intro = toshell.labels.EVENT_INTRO_TEXT
 
-    def __init__(self, state, evid, ck='tab', stdin=None, stdout=None):
+    def __init__(self, state, evid, result_factory, ck='tab', stdin=None, stdout=None):
         self.prompt = f"Event {evid}> "
+        self._result_factory = result_factory
         self._init_event(state, evid)
         self._evid = evid
         self._event = state.events[evid]
@@ -56,29 +59,58 @@ class EventManageShell(Cmd, ExitMixin):
         else:
             self._enroll_one(plid)
 
-    def do_enroll_all(self, _):                     
+    def do_enroll_all(self, _):
         for plid in self._players.keys():
             self._enroll_one(plid)
 
-    def do_standings(self, _):
-        standings = sorted(self._event.playersDict.values(), key=lambda p: p[POINTS_KEY]+float(p[OMW_KEY]), reverse=True)
-        col_width = max(len(p[NAME_KEY]) for p in standings) + 2
-        print(f"PLACE:\t{'PLAYER'.ljust(col_width)}\tPOINTS\tOMW%")
-        for place, player in enumerate(standings):
-            print(f"{place+1}:\t{player[NAME_KEY].ljust(col_width)}\t{player[POINTS_KEY]}\t{player[OMW_KEY]}")
+    def do_bye(self, plid):
+        if plid in self._players.keys():
+            self._event.assignBye(plid)
+            print(f"{self._players[plid]} gets a bye!")
+        else:
+            print(f"No player with ID {plid}")
 
-    def do_pair(self, _):
+    def do_match(self, plids):
+        a_plid = [plid.strip() for plid in plids.split(",")]
+        if len(a_plid) == 2\
+            and a_plid[0] in self._players\
+            and a_plid[1] in self._players:
+            self._event.pairPlayers(*a_plid)
+        else:
+            print(f"Could not pair {a_plid}!")
+
+    def do_standings(self, _):
+        calc = self._result_factory.points_calculator()
+        standings = sorted(self._event.playersDict.values(), key=cmp_to_key(calc.standings_comparator), reverse=False)
+        col_width = max(len(p) for p in self._players.values()) + 2
+        header = f"PLACE:\t{'PLAYER'.ljust(col_width)}\tPOINTS"
+        for i,_ in enumerate(calc.tiebreak_calcs):
+            header += f"\tTB{i}"
+        print(header)
+        for place, player in enumerate(standings):
+            pname = self._players[player.id]
+            plid = player.id
+            _display_name=f"{plid}:{pname}"
+            tiebreaks = "\t".join((str(tb) for tb in player.tiebreaks))
+            print(f"{place+1}:\t{_display_name.ljust(col_width)}\t{player.points_total(calc)}\t{tiebreaks}")
+
+    def api_pair(self):
         if self._event.playersDict:
-            self._event.pairRound()
-            RoundShell(self._evid, self._event, self._players, self.completekey, self.stdin, self.stdout).cmdloop()
+            self._event.pairRound(forcePair=True)
+            return RoundShell(self._evid, self._event, self._players, self._result_factory, self.completekey, self.stdin, self.stdout)
         else:
             print("No players enrolled!")
+            return None
+
+    def do_pair(self, _):
+        if api := self.api_pair():
+            api.cmdloop()
 
 class RoundShell(Cmd):
 
     _exit_msg = "Round finished!"
 
-    def __init__(self, evid, event, players, ck='tab', stdin=None, stdout=None):
+    def __init__(self, evid, event, players, result_factory, ck='tab', stdin=None, stdout=None):
         self._event = event
         self._players = players
         self._round = event.currentRound
@@ -87,42 +119,34 @@ class RoundShell(Cmd):
         self._results = {}
         super().__init__(completekey=ck, stdin=stdin, stdout=stdout)
         self.do_pairings()
+        self._result_factory = result_factory
 
     def do_pairings(self, _=None):
         for (table, pair) in self._event.roundPairings.items():
-            print(f"Table {table} - {self._players[pair[0]]} : {self._players[pair[1]]}")
+            p1id, p2id = (p.id for p in pair)
+            print(f"Table {table} - {p1id}:{self._players[p1id]} vs. {p2id}:{self._players[p2id]}")
             if table in self._results:
-                print(f"Result: {' - '.join(str(r) for r in self._results[table])}")
+                print(self._results[table].descriptive(self._players))
             else:
                 print("Still playing!")
 
     def do_report(self, params):
+        print(f"got params: {params} ({len(params)})")
         tables = self._event.roundPairings
+        if not params:
+            print(f"Table needed!")
+            return
         args = params.split(" ")
-        if len(args) == 1:
-            self._query_result(params)
+        tblid = int(args[0])
+        if tblid and tblid in tables:
+            table = tables[tblid]
+            if len(args) == 1:
+                result = self._result_factory.query_result(table, self._players)
+            else:              
+                result = self._result_factory.interpret(table, args[1])
+            self._results[tblid] = result
         else:
-            tbl = int(args[0])
-            if tbl and tbl in tables:
-                res = args[1].split("-")
-                if len(res) < 2:
-                    print(f"Invalid result: {res}!")
-                else:
-                    print(f"Table {tbl}: {args[1]}")
-                    self._results[tbl] = [int(r) for r in res]
-
-    def _query_result(self, table_str):
-        tables = self._event.roundPairings
-        table = int(table_str)
-        if table and table in tables:
-            pair = tables[table]
-            p1 = int(input(f"{self._players[pair[0]]} wins: "))
-            p2 = int(input(f"{self._players[pair[1]]} wins: "))
-            d = int(input("Draws: "))
-            print(f"Table {table}: {p1}-{p2}-{d}")
-            self._results[table] = [p1, p2, d]
-        else:
-            print(f"Table '{table}' does not exist!")
+            print(f"Table {tblid} not found!")
 
     def do_submit(self, _):
         missing = set(self._event.tablesOut) - set(self._results.keys())
@@ -131,8 +155,7 @@ class RoundShell(Cmd):
         else:
             results = dict(self._results)
             for table, res in self._results.items():
-                if len(res) < 3: res += [0]*(3 - len(res))
-                self._event.reportMatch(table, res)
+                self._event.reportMatch(table, res.technical())
                 del results[table]
             self._results = results
             if not results: 

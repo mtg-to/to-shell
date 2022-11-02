@@ -5,6 +5,8 @@ Created on 15 Mar 2021
 '''
 from cmd import Cmd
 from toshell.utils import ExitMixin
+from toshell.labels import PLAYER_ADD_HELP
+from toshell.labels import PLAYER_LIST_SAVE_HELP
 import csv
 
 class PlayersShell(Cmd, ExitMixin):
@@ -25,7 +27,7 @@ class PlayersShell(Cmd, ExitMixin):
             self._state.players = players
             return True
         except Exception as ex:
-            print(f"Couldn't load: {ex}")
+            print(f"Couldn't load player DB from path: {ex}")
 
     def do_save(self, path):
         try:
@@ -34,7 +36,10 @@ class PlayersShell(Cmd, ExitMixin):
                 for (plid, name) in self._state.players.items():
                     writer.writerow([plid, name])
         except Exception as ex:
-            print(f"Couldn't save: {ex}")
+            print(f"Couldn't save player DB to path: {ex}")
+
+    def help_save(self):
+        print(PLAYER_LIST_SAVE_HELP)
 
     def do_list(self, _):
         for (plid, name) in self._state.players.items():
@@ -45,8 +50,14 @@ class PlayersShell(Cmd, ExitMixin):
             del self._state.players[plid]
 
     def do_add(self, player_def):
+        if not player_def or not ":" in player_def:
+            self.help_add()
+            return
         (plid, name) = player_def.split(":")
         if not plid or not name:
-            self.do_help_add()
+            self.help_add()
             return
         self._state.players[plid] = name
+
+    def help_add(self):
+        print(PLAYER_ADD_HELP)
