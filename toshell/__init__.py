@@ -9,18 +9,20 @@ from toshell.labels import SHELL_INTRO_TEXT, SHELL_OUTRO_TEXT
 from toshell.event import EventManageShell
 from toshell.game.mtg import MtgResultFactory
 from toshell.game.fow import FoWResultFactory
-
+from toshell.memento.recorder import recorder
+from toshell.memento.recorder import TypeCapture
 
 class TOShell(Cmd, ExitMixin):
-    
-    prompt = 'TO> '
+
+    prompt = "TO> "
     intro = SHELL_INTRO_TEXT
     _exit_msg = SHELL_OUTRO_TEXT
-    
-    def __init__(self, ck='tab', stdin=None, stdout=None):
+
+    @recorder.record_init(assign="to")
+    def __init__(self, ck="tab", stdin=None, stdout=None):
         super().__init__(completekey=ck, stdin=stdin, stdout=stdout)
         self._state = ShellState()
-    
+
     def do_list_events(self, _):
         for evid in self._state.events.keys():
             print(evid)
@@ -31,8 +33,18 @@ class TOShell(Cmd, ExitMixin):
         else:
             self.api_manage(evid).cmdloop()
 
+    @recorder.record_command(
+        assign="evt", captures=[TypeCapture("result_factory_factory")]
+    )
     def api_manage(self, evid, result_factory_factory=MtgResultFactory):
-        return EventManageShell(self._state, evid, result_factory_factory(), self.completekey, self.stdin, self.stdout)
+        return EventManageShell(
+            self._state,
+            evid,
+            result_factory_factory(),
+            self.completekey,
+            self.stdin,
+            self.stdout,
+        )
 
     def help_manage(self):
         print(toshell.labels.EVENT_MANAGE_HELP)
@@ -46,8 +58,12 @@ class TOShell(Cmd, ExitMixin):
     def help_fow(self):
         print(toshell.labels.EVENT_MANAGE_HELP)
 
+    @recorder.record_command(assign="players")
+    def api_players(self):
+        return PlayersShell(self._state, self.completekey, self.stdin, self.stdout)
+
     def do_players(self, params):
-        pshell = PlayersShell(self._state, self.completekey, self.stdin, self.stdout)
+        pshell = self.api_players()
         if params:
             pshell.do_load(params)
         else:
@@ -57,4 +73,8 @@ class TOShell(Cmd, ExitMixin):
         print(toshell.labels.PLAYERS_MANAGE_HELP)
 
 def main():
+    recorder.register_import(TOShell)
+    recorder.register_import(FoWResultFactory)
+    recorder.register_import(MtgResultFactory)
     TOShell().cmdloop()
+
