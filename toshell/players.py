@@ -7,6 +7,7 @@ from cmd import Cmd
 from toshell.utils import ExitMixin
 from toshell.labels import PLAYER_ADD_HELP
 from toshell.labels import PLAYER_LIST_SAVE_HELP
+from toshell.memento.recorder import recorder
 import csv
 
 class PlayersShell(Cmd, ExitMixin):
@@ -18,6 +19,7 @@ class PlayersShell(Cmd, ExitMixin):
         super().__init__(completekey=ck, stdin=stdin, stdout=stdout)
         self._state = state
 
+    @recorder.record_command()
     def do_load(self, path):
         players = {}
         try:
@@ -29,6 +31,7 @@ class PlayersShell(Cmd, ExitMixin):
         except Exception as ex:
             print(f"Couldn't load player DB from path: {ex}")
 
+    @recorder.record_command()
     def do_save(self, path):
         try:
             with open(path, "w") as players_file:
@@ -45,10 +48,12 @@ class PlayersShell(Cmd, ExitMixin):
         for (plid, name) in self._state.players.items():
             print(f"{plid}: {name}")
 
+    @recorder.record_command()
     def do_remove(self, plid):
         if plid in self._state.players:
             del self._state.players[plid]
 
+    @recorder.record_command()
     def do_add(self, player_def):
         if not player_def or not ":" in player_def:
             self.help_add()

@@ -12,6 +12,7 @@ import pypair
 from toshell.utils import ExitMixin
 from toshell.utils import dict_rev_lookup
 from toshell.game.mtg import MtgResultFactory
+from toshell.memento.recorder import recorder
 from functools import cmp_to_key
 
 POINTS_KEY = "Points"
@@ -53,12 +54,14 @@ class EventManageShell(Cmd, ExitMixin):
         else: 
             print(f"No player with ID {plid}")
 
+    @recorder.record_command()
     def do_enroll(self, plid):
         if 'all' == plid:
             self.do_enroll_all(plid)
         else:
             self._enroll_one(plid)
 
+    @recorder.record_command()
     def do_enroll_all(self, _):
         for plid in self._players.keys():
             self._enroll_one(plid)

@@ -1,5 +1,8 @@
 .project
 .pydevproject
-players.csv
+.vscode
+*.csv
+*.txt
 Pipfile.lock
 *.pyc
+
