@@ -61,6 +61,15 @@ Usage: manage {evid}
 Opens a management console for an event named {evid}.
 '''
 
+EVENT_MATCH_HELP='''
+Usage: match {plid1},{plid2}
+  * plid1 - id of player 1
+  * plid2 - id of player 2
+
+Forces a pairing of player 1 with player 2.
+'''
+
+
 PLAYERS_MANAGE_HELP='''
 Usage: players ({path})
   * path (optional) - path to the player database to open

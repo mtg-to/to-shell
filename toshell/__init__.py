@@ -1,5 +1,6 @@
 from cmd import Cmd
 
+import sys
 
 import toshell.labels
 from toshell.models import ShellState
@@ -73,6 +74,7 @@ class TOShell(Cmd, ExitMixin):
         print(toshell.labels.PLAYERS_MANAGE_HELP)
 
 def main():
+    recorder.start()
     recorder.register_import(TOShell)
     recorder.register_import(FoWResultFactory)
     recorder.register_import(MtgResultFactory)

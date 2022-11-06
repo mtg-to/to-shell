@@ -14,6 +14,7 @@ from toshell.utils import dict_rev_lookup
 from toshell.game.mtg import MtgResultFactory
 from toshell.memento.recorder import recorder
 from functools import cmp_to_key
+from toshell.labels import EVENT_MATCH_HELP
 
 POINTS_KEY = "Points"
 OMW_KEY = "OMW%"
@@ -68,7 +69,7 @@ class EventManageShell(Cmd, ExitMixin):
 
     def do_bye(self, plid):
         if plid in self._players.keys():
-            self._event.assignBye(plid)
+            self._event.assign_bye_by_id(plid)
             print(f"{self._players[plid]} gets a bye!")
         else:
             print(f"No player with ID {plid}")
@@ -78,9 +79,12 @@ class EventManageShell(Cmd, ExitMixin):
         if len(a_plid) == 2\
             and a_plid[0] in self._players\
             and a_plid[1] in self._players:
-            self._event.pairPlayers(*a_plid)
+            self._event.pair_players_by_id(*a_plid)
         else:
             print(f"Could not pair {a_plid}!")
+
+    def help_match(self):
+        print(HELP)
 
     def do_standings(self, _):
         calc = self._result_factory.points_calculator()
@@ -97,13 +101,21 @@ class EventManageShell(Cmd, ExitMixin):
             tiebreaks = "\t".join((str(tb) for tb in player.tiebreaks))
             print(f"{place+1}:\t{_display_name.ljust(col_width)}\t{player.points_total(calc)}\t{tiebreaks}")
 
+    @recorder.record_command(assign="rnd")
     def api_pair(self):
         if self._event.playersDict:
             self._event.pairRound(forcePair=True)
+            self._spoof_pairing_recording()
             return RoundShell(self._evid, self._event, self._players, self._result_factory, self.completekey, self.stdin, self.stdout)
         else:
             print("No players enrolled!")
             return None
+
+    def _spoof_pairing_recording(self):
+        do_match = recorder.spoof_command("do_match")
+        for (table, pair) in self._event.roundPairings.items():
+            pairstr=",".join((p.id for p in pair))
+            do_match(self, pairstr)
 
     def do_pair(self, _):
         if api := self.api_pair():
@@ -135,22 +147,32 @@ class RoundShell(Cmd):
 
     def do_report(self, params):
         print(f"got params: {params} ({len(params)})")
-        tables = self._event.roundPairings
         if not params:
             print(f"Table needed!")
             return
         args = params.split(" ")
         tblid = int(args[0])
-        if tblid and tblid in tables:
-            table = tables[tblid]
-            if len(args) == 1:
-                result = self._result_factory.query_result(table, self._players)
-            else:              
-                result = self._result_factory.interpret(table, args[1])
-            self._results[tblid] = result
-        else:
+        tables = self._event.roundPairings
+        if not tblid or tblid not in tables:
             print(f"Table {tblid} not found!")
+            return
+        if len(args) == 1:
+            points = self._result_factory.query_result(self._players[tables[tblid][0].id],self._players[tables[tblid][1].id])
+        else:
+            points = args[1]
+        self.api_report(tblid, points)
 
+
+    @recorder.record_command()
+    def api_report(self, tblid, points_str):
+        tblid = int(tblid)
+        tables = self._event.roundPairings
+        table = tables[tblid]
+        result = self._result_factory.interpret(table, points_str)
+        if result:
+            self._results[tblid] = result
+
+    @recorder.record_command()
     def do_submit(self, _):
         missing = set(self._event.tablesOut) - set(self._results.keys())
         if missing:

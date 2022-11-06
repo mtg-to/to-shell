@@ -48,8 +48,8 @@ class MtgResultFactory(ResultFactory):
             return None
         return MtgMatchResult(table[0], results[0], table[1], results[1])
 
-    def query_result(self, table, players):
-        p1score = int(input(f"{players[table[0].id]} wins: "))
-        p2score = int(input(f"{players[table[1].id]} wins: "))
-        d = int(input("Draws: "))
-        return MtgMatchResult(table[0], p1score, table[1], p2score)
+    def query_result(self, p1, p2):
+        p1score = input(f"{p1} wins: ")
+        p2score = input(f"{p2} wins: ")
+        d = input("Draws: ")
+        return f"{p1score}-{p2score}-{d}"

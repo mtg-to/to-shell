@@ -6,6 +6,7 @@ from pypair import (
     WLDPointsCalculator,
     omw_tb,
     PlayerRecord,
+    ByeResult,
 )
 from functools import cmp_to_key
 from toshell.game.api import (
@@ -15,8 +16,7 @@ from toshell.game.api import (
 
 
 def bfp_tb(player: PlayerRecord):
-    return sum((res.bf_points for res in player.results))
-
+    return sum((res.bf_points for res in player.results if not isinstance(res, ByeResult)))
 
 @dataclass
 class FoWRoundResult(BasicRoundResult):
@@ -80,12 +80,20 @@ class FoWResultFactory(ResultFactory):
                 f"Result must be reported as '[Player 1 bf points]-[Player 2 bf points]' - got: {res_string}"
             )
             return None
-        return FoWMatchResult(table[0], int(results[0]), table[1], int(results[1]))
+        try:
+            i_r0=int(results[0])
+            i_r1=int(results[1])
+        except ValueError:
+            print(
+                f"Result must be reported as '[Player 1 bf points]-[Player 2 bf points]' - got: {res_string}"
+            )
+            return None
+        return FoWMatchResult(table[0], i_r0, table[1], i_r1)
 
-    def query_result(self, table, players):
-        p1score = input_int(f"{players[table[0].id]} BF Points: ")
-        p2score = input_int(f"{players[table[1].id]} BF Points: ")
-        return FoWMatchResult(table[0], p1score, table[1], p2score)
+    def query_result(self, p1, p2):
+        p1score = input(f"{p1} BF Points: ")
+        p2score = input(f"{p2} BF Points: ")
+        return f"{p1score}-{p2score}"
 
 def input_int(msg):
     val = None
